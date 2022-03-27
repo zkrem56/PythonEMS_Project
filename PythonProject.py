@@ -53,13 +53,16 @@ class Employee:
 
                 #name = firstName + " " + lastName
                 #email = f"{firstName}.{lastName}{birthYear%100}@company.com"
+                while True:
+                    datofemploy = input("Enter Date of Employment (mm-dd-yyyy): ")
 
-                datofemploy = input("Enter Date of Employment (mm-dd-yyyy): ")
-
-                #if re.search("^\d{2}\-\d{2}\-\d{4}$", datofemploy) == True:
-                 #   print("You entred the date correctly")
-               # else:
-                #    print("Did not work")
+                    #Gets if the regex statement matches
+                    match = re.search("^\d{2}\-\d{2}\-\d{4}$", datofemploy)
+                    if match:
+                        break
+                    else:
+                        print("Please enter correct format mm-dd-yy")
+                
                 while True:
                     try: 
                         salary = int(input("Enter employee salary: "))
