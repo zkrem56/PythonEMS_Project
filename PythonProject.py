@@ -1,5 +1,6 @@
 #Import Modules
 import csv
+import re
 from pprint import pprint
 
 #Creating Custom Exception Classes
@@ -55,6 +56,10 @@ class Employee:
 
                 datofemploy = input("Enter Date of Employment (mm-dd-yyyy): ")
 
+                #if re.search("^\d{2}\-\d{2}\-\d{4}$", datofemploy) == True:
+                 #   print("You entred the date correctly")
+               # else:
+                #    print("Did not work")
                 while True:
                     try: 
                         salary = int(input("Enter employee salary: "))
@@ -209,7 +214,7 @@ class Employee:
 
     def getEmployee():
         employees = []
-        header = []
+        displayDept = []
         try:
             with open("./resources/employee2.csv", "rt") as file:
                 reader = csv.DictReader(file, ["id","First Name","Last Name","age","Date of Employment","Salary","Department"])
@@ -222,28 +227,34 @@ class Employee:
         dpart = input("Do you want to search for employee by department (y (Yes), n (No):")
         if dpart == "y":
             dpartList = []
-            for i in range(len(employees)):
-                dpartList.append(employees[i].get("Department"))
-            pprint(f"Here are the Departments: {set(dpartList)}")
-            
-            dpartSet = set(dpartList)
 
-            for i in range(len(dpartSet)):
-                print(dpartSet[i])
+            print("Getting Departments")
+            dpartList = [dp.get("Department") for dp in employees]
+
+            pprint(set(dpartList))
             
-            #dpartName = input("Which department would you like to see: ")
+            dpartName = input("Which department would you like to see: ")
             
-            
+            displayDept = [dp for dp in set(dpartList) if dp == dpartName]
+
+            print(displayDept)
 
 
 
         while True:
             print("Employee List:")
             for i in range(len(employees)):
-                id = employees[i].get("id")
-                firstName = employees[i].get("First Name")
-                lastName = employees[i].get("Last Name")
-                print(f"{id}: {firstName} {lastName}")
+                if not displayDept:
+                    id = employees[i].get("id")
+                    firstName = employees[i].get("First Name")
+                    lastName = employees[i].get("Last Name")
+                    print(f"{id}: {firstName} {lastName}")
+                else:
+                    if displayDept[0] == employees[i].get("Department"):
+                        id = employees[i].get("id")
+                        firstName = employees[i].get("First Name")
+                        lastName = employees[i].get("Last Name")
+                        print(f"{id}: {firstName} {lastName}")
 
             numId = int(input("Enter Id of employee you want to see information on:"))
 
