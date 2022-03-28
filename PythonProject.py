@@ -5,6 +5,7 @@ import mysql.connector
 #import pyodbc
 from pprint import pprint
 
+#Connects to database
 mydb = mysql.connector.connect(
     host = "localhost",
     user = "root",
@@ -12,6 +13,7 @@ mydb = mysql.connector.connect(
     database = "ems_database"
 )
 
+#Allows program to read from database
 cursor = mydb.cursor(buffered=True)
 
 cursor.execute("SELECT * FROM employee")
@@ -27,6 +29,7 @@ class Employee:
         max_employees = 3
         employees = []
         header = []
+        global cursor
 
         #Get data employee data from employee2.csv
         try:
@@ -85,10 +88,11 @@ class Employee:
                 id = Employee.assignId(employees)
 
                 employees.append(dict({"id": id, "First Name": firstName, "Last Name": lastName, "age": age, "Date of Employment": datofemploy, "Salary": salary, "Department": department}))
-                data_user = (firstName,lastName,age,datofemploy,salary,department)
+                data_user = (id,firstName,lastName,age,datofemploy,salary,department)
                 query = ("INSERT INTO employee (First_Name, Last_Name, age, Date_of_Employment, Salary, Department)"
                         "VALUES(%s,%s,%s,%s,%s,%s)")
-                cursor.execute("INSERT INTO employee (First_Name, Last_Name, age, Date_of_Employment, Salary, Department) VALUES(%s,%s,%s,%s,%s,%s)", data_user)
+                cursor.execute("INSERT INTO employee (id, First_Name, Last_Name, age, Date_of_Employment, Salary, Department) VALUES(%s,%s,%s,%s,%s,%s,%s)", data_user)
+                mydb.commit()
                 #cursor.execute(query, data_user)
                 #con.enter_transatction_management()
 
@@ -133,7 +137,7 @@ class Employee:
 
             print(f"{id}: {firstName} {lastName}")
 
-            
+        cursor.execute("SELECT * FROM employee")
         #pprint(employees)
 
         while True:
@@ -154,18 +158,22 @@ class Employee:
             except ValueError: print("Did not enter an Integer") #Makes sure number is an int
             except NotAnOptionException: print("You did not enter a option") #Makes sure the user chooses an option
         
+
         for i in range(len(employees)):
-            print(i)
+            #print(i)
             if numId == int(employees[i].get("id")):
                 if choice == 1:
                     firstName = input("Enter new First name: ")
                     employees[i].update({"First Name":firstName})
+                    cursor.execute("UPDATE employee SET First_Name = %s WHERE id = %s", (firstName, numId))
                 elif choice == 2:
                     lastName = input("Enter new Last Name: ")
                     employees[i].update({"Last Name":lastName})
+                    cursor.execute("UPDATE employee SET Last_Name = %s WHERE id = %s", (lastName, numId))
                 elif choice == 3:
                     department = input("Enter new Department: ")
                     employees[i].update({"Department":department})
+                    cursor.execute("UPDATE employee SET Department = %s WHERE id = %s", (department, numId))
                 elif choice == 4:
                     while True:
                         try:
@@ -173,15 +181,19 @@ class Employee:
                             break
                         except ValueError: print("Enter a Integer")
                     employees[i].update({"Salary":salary})
+                    cursor.execute("UPDATE employee SET Salary = %s WHERE id = %s", (salary, numId))
                 elif choice == 5:
                     while True:
                         try:
                             age = int(input("Enter new Age: "))
+                            if age > 18:
+                                break
                         except ValueError: print("Enter a Integer")
                     employees[i].update({"age":age})
+                    cursor.execute("UPDATE employee SET age = %s WHERE id = %s", (age, numId))
                 break
         
-
+        mydb.commit()
         try:
             with open("./resources/employee2.csv", "wt", newline="") as file:
                 writer = csv.DictWriter(file, header)
@@ -190,6 +202,7 @@ class Employee:
                 print("Database updated Successful")
         except FileNotFoundError: print("File Not Found")
         #except: print("Something went wrong")
+    ###End of UPdate Function###
 
 #============================================================================================
 
@@ -205,7 +218,6 @@ class Employee:
                 for row in reader:
                     employees.append(row)
         except FileNotFoundError: print("File Not Found")
-
         print("Here are the employees:")
         for i in range(len(employees)):
             id = int(employees[i].get("id"))
@@ -217,8 +229,11 @@ class Employee:
         for i in range(len(employees)):
             if int(employees[i].get("id")) == numId:
                 employees.pop(i)
+                cursor.execute("DELETE FROM employee WHERE id = %s", (f"{numId}", ))
                 break
-
+        
+        #Updates the Database
+        mydb.commit()
         try:
             with open("./resources/employee2.csv", "wt", newline="") as file:
                 writer = csv.DictWriter(file, header)
@@ -236,7 +251,7 @@ class Employee:
     def getEmployee():
         employees = []
         displayDept = []
-        global cursor
+        cursor.execute("SELECT * FROM employee")
         try:
             with open("./resources/employee2.csv", "rt") as file:
                 reader = csv.DictReader(file, ["id","First Name","Last Name","age","Date of Employment","Salary","Department"])
@@ -253,9 +268,6 @@ class Employee:
             print("Getting Departments")
             dpartList = [dp[6] for dp in cursor]
 
-            for i in cursor:
-                print(i[4])
-
             pprint(set(dpartList))
             
             dpartName = input("Which department would you like to see: ")
@@ -263,17 +275,19 @@ class Employee:
             displayDept = [dp for dp in set(dpartList) if dp == dpartName]
 
             print(displayDept)
+            cursor.execute("SELECT * FROM employee")
 
         while True:
             print("Employee List:")
             for i in cursor:
+                #dept = i[6]
                 if not displayDept:
                     id = i[0]
                     firstName = i[1]
                     lastName = i[2]
                     print(f"{id}: {firstName} {lastName}")
                 else:
-                    if dpartName == displayDept[0]:
+                    if dpartName == i[6]:
                         id = i[0]
                         firstName = i[1]
                         lastName = i[2]
@@ -281,10 +295,12 @@ class Employee:
 
             numId = int(input("Enter Id of employee you want to see information on:"))
 
-            for i in range(len(employees)):
+            cursor.execute("SELECT * FROM employee")
 
-                if numId == int(employees[i].get("id")):
-                    pprint(employees[i])
+            for i in cursor:
+
+                if numId == int(i[0]):
+                    print(i)
                     break
 
             choice = int(input("Do you want to view another employee (1 yes, 2 no: "))
@@ -333,6 +349,4 @@ def main():
 
 
 #Runs the program
-for i in cursor:
-    print(i)
 main()
