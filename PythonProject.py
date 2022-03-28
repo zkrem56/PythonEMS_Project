@@ -1,7 +1,20 @@
 #Import Modules
 import csv
 import re
+import mysql.connector
+#import pyodbc
 from pprint import pprint
+
+mydb = mysql.connector.connect(
+    host = "localhost",
+    user = "root",
+    password = "root",
+    database = "ems_database"
+)
+
+cursor = mydb.cursor(buffered=True)
+
+cursor.execute("SELECT * FROM employee")
 
 #Creating Custom Exception Classes
 class AgeException(Exception): pass
@@ -75,6 +88,14 @@ class Employee:
                 id = Employee.assignId(employees)
 
                 employees.append(dict({"id": id, "First Name": firstName, "Last Name": lastName, "age": age, "Date of Employment": datofemploy, "Salary": salary, "Department": department}))
+                data_user = (firstName,lastName,age,datofemploy,salary,department)
+                query = ("INSERT INTO employee (First_Name, Last_Name, age, Date_of_Employment, Salary, Department)"
+                        "VALUES(%s,%s,%s,%s,%s,%s)")
+                cursor.execute("INSERT INTO employee (First_Name, Last_Name, age, Date_of_Employment, Salary, Department) VALUES(%s,%s,%s,%s,%s,%s)", data_user)
+                #cursor.execute(query, data_user)
+                #con.enter_transatction_management()
+
+                #cursor.commit()
 
             except ValueError: print("Enter a Integer")
             except AgeException:
@@ -218,6 +239,7 @@ class Employee:
     def getEmployee():
         employees = []
         displayDept = []
+        global cursor
         try:
             with open("./resources/employee2.csv", "rt") as file:
                 reader = csv.DictReader(file, ["id","First Name","Last Name","age","Date of Employment","Salary","Department"])
@@ -232,7 +254,10 @@ class Employee:
             dpartList = []
 
             print("Getting Departments")
-            dpartList = [dp.get("Department") for dp in employees]
+            dpartList = [dp[6] for dp in cursor]
+
+            for i in cursor:
+                print(i[4])
 
             pprint(set(dpartList))
             
@@ -242,21 +267,19 @@ class Employee:
 
             print(displayDept)
 
-
-
         while True:
             print("Employee List:")
-            for i in range(len(employees)):
+            for i in cursor:
                 if not displayDept:
-                    id = employees[i].get("id")
-                    firstName = employees[i].get("First Name")
-                    lastName = employees[i].get("Last Name")
+                    id = i[0]
+                    firstName = i[1]
+                    lastName = i[2]
                     print(f"{id}: {firstName} {lastName}")
                 else:
-                    if displayDept[0] == employees[i].get("Department"):
-                        id = employees[i].get("id")
-                        firstName = employees[i].get("First Name")
-                        lastName = employees[i].get("Last Name")
+                    if dpartName == displayDept[0]:
+                        id = i[0]
+                        firstName = i[1]
+                        lastName = i[2]
                         print(f"{id}: {firstName} {lastName}")
 
             numId = int(input("Enter Id of employee you want to see information on:"))
@@ -313,4 +336,6 @@ def main():
 
 
 #Runs the program
+for i in cursor:
+    print(i)
 main()
